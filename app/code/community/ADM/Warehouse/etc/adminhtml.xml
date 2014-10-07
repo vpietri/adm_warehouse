@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<config>
+    <menu>
+        <catalog translate="title" module="catalog">
+            <children>
+                <warehouse translate="title" module="adm_warehouse">
+                    <title>Warehouses</title>
+                    <sort_order>5</sort_order>
+                    <children>
+                        <warehouses translate="title" module="adm_warehouse">
+                            <title>Manage Warehouses</title>
+                            <action>adminhtml/warehouse/index</action>
+                            <sort_order>10</sort_order>
+                        </warehouses>
+                        <stocks translate="title" module="adm_warehouse">
+                            <title>Manage Stocks</title>
+                            <action>adminhtml/stock/index</action>
+                            <sort_order>20</sort_order>
+                        </stocks>                        
+                    </children>
+                </warehouse>
+            </children>
+        </catalog>
+    </menu>
+</config>
