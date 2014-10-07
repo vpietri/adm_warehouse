@@ -43,9 +43,12 @@ class ADM_Warehouse_Model_Cataloginventory_Observer extends Mage_CatalogInventor
                 $item->setStockId($stockId);
 
                 $this->_prepareItemForSave($item, $product);
-                if (isset($itemIds[$stockId])) {
+                if (!empty($itemIds[$stockId])) {
                     $item->setId($itemIds[$stockId]);
+                } else {
+                    $item->setId(null);
                 }
+
                 $item->save();
             }
         } else {
@@ -57,49 +60,4 @@ class ADM_Warehouse_Model_Cataloginventory_Observer extends Mage_CatalogInventor
         return $this;
     }
 
-
-
-    /**
-     * Adds stock item qty to $items (creates new entry or increments existing one)
-     * $items is array with following structure:
-     * array(
-     *  $productId  => array(
-     *      'qty'   => $qty,
-     *      'item'  => $stockItems|null
-     *  )
-     * )
-     *
-     * @param Mage_Sales_Model_Quote_Item $quoteItem
-     * @param array &$items
-     */
-//     protected function _addItemToQtyArray($quoteItem, &$items)
-//     {
-//         $productId = $quoteItem->getProductId();
-//         if (!$productId)
-//             return;
-
-//         //In case that warehouses are specified from cart
-//         $options = $quoteItem->getBuyRequest()->getOptions();
-//         if(!empty($options['warehouses'])) {
-//             $items[$productId]['warehouses'] = $options['warehouses'];
-//         } else {
-
-//         }
-
-
-//         if (isset($items[$productId])) {
-//             $items[$productId]['qty'] += $quoteItem->getTotalQty();
-//         } else {
-//             $stockItem = null;
-//             if ($quoteItem->getProduct()) {
-//                 $stockItem = $quoteItem->getProduct()->getStockItem();
-//             }
-//             $items[$productId] = array(
-//                     'item' => $stockItem,
-//                     'warehouses' => array(),
-//                     'qty'  => $quoteItem->getTotalQty()
-//             );
-
-//         }
-//     }
 }

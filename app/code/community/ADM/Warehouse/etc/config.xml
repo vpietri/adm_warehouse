@@ -33,12 +33,13 @@
                     <stock_item_collection>ADM_Warehouse_Model_Cataloginventory_Resource_Stock_Item_Collection</stock_item_collection>
                     <stock_collection>ADM_Warehouse_Model_Cataloginventory_Resource_Stock_Collection</stock_collection>
                 </rewrite>
-            </cataloginventory_resource>            
-            <checkout>
+            </cataloginventory_resource>
+            <!-- In order to split order per warehouse -->            
+<!--             <checkout>
                 <rewrite>
                     <type_onepage>ADM_Warehouse_Model_Checkout_Type_Onepage</type_onepage>
                 </rewrite>
-            </checkout>          
+            </checkout>   -->        
         </models>
         <resources>
             <adm_warehouse_setup>

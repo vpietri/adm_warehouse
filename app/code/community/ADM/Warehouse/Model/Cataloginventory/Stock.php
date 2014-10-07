@@ -82,9 +82,6 @@ class ADM_Warehouse_Model_Cataloginventory_Stock extends Mage_CatalogInventory_M
                 $stockItems[$item->getProductId()] = $item;
             }
 
-//             if (!$stockItems[$item->getProductId()]->getIsInStock() and  $item->getIsInStock()) {
-//                 $stockItems[$item->getProductId()]->setIsInStock(true);
-//             }
             $qty[$item->getProductId()] += $item->getQty();
             $stockDetails[$item->getProductId()][] = array('item_id'=>$item->getId(), 'qty'=>$item->getQty(), 'stock_id'=>$item->getStockId());
 
@@ -112,12 +109,12 @@ class ADM_Warehouse_Model_Cataloginventory_Stock extends Mage_CatalogInventory_M
     public function registerProductsSale($items)
     {
         $warehouses_qtys = $this->_prepareProductWarehousesAndQtys($items);
-        $item = Mage::getModel('cataloginventory/stock_item');
 
         $this->_getResource()->beginTransaction();
         $stockInfo = $this->_getResource()->getProductsStock($this, array_keys($warehouses_qtys['products']), true);
 
         $fullSaveItems = array();
+        $item = Mage::getModel('cataloginventory/stock_item');
         foreach ($stockInfo as $itemInfo) {
             $item->setData($itemInfo);
             if (!$item->checkQty($warehouses_qtys['products'][$item->getProductId()])) {
@@ -144,7 +141,7 @@ class ADM_Warehouse_Model_Cataloginventory_Stock extends Mage_CatalogInventory_M
     {
         $warehouses_qtys = $this->_prepareProductWarehousesAndQtys($items);
 
-        $this->_getResource()->correctItemsByWarehouseQty($warehouses_qtys['warehouses'], '+');
+        $this->_getResource()->correctItemsByWarehouseQty($warehouses_qtys, '+');
         return $this;
     }
 
