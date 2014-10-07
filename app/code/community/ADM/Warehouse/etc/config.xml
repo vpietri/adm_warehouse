@@ -30,6 +30,7 @@
                 <rewrite>
                     <stock>ADM_Warehouse_Model_Cataloginventory_Resource_Stock</stock>
                     <stock_item>ADM_Warehouse_Model_Cataloginventory_Resource_Stock_Item</stock_item>
+                    <stock_status>ADM_Warehouse_Model_Cataloginventory_Resource_Stock_Status</stock_status>
                     <stock_item_collection>ADM_Warehouse_Model_Cataloginventory_Resource_Stock_Item_Collection</stock_item_collection>
                     <stock_collection>ADM_Warehouse_Model_Cataloginventory_Resource_Stock_Collection</stock_collection>
                 </rewrite>
