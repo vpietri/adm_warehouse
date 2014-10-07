@@ -29,12 +29,10 @@ class ADM_Warehouse_Model_CatalogInventory_Resource_Stock_Item_Collection extend
      */
     protected function _afterLoadData()
     {
-
         // Sort stock item by stock order
         if ($this->getFlag('stock_filter')) {
             $sortedData= array();
             foreach($this->_data as $itemData) {
-                var_dump($itemData['stock_id']);
                 $key = array_search($itemData['stock_id'], $this->_stock_filter_ids, true);
                 $sortedData[$key] = $itemData;
             }

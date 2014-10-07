@@ -31,11 +31,8 @@ class ADM_Warehouse_Model_Checkout_Type_Onepage extends Mage_Checkout_Model_Type
             }
         }
 
-        //var_dump(array_keys($sortedItems));
-
         $quote->setWarehouseIds(implode(',',array_keys($sortedItems)));
         if(count($sortedItems)>1 and $splitOnMuliWarehouse) {
-//             Mage::register('has_several_warehouses', true);
             $orders=array();
             foreach ($sortedItems as $stockId => $stockItems) {
 

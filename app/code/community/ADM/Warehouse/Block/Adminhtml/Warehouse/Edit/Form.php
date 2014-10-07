@@ -43,6 +43,18 @@ class ADM_Warehouse_Block_Adminhtml_Warehouse_Edit_Form extends Mage_Adminhtml_B
                 'title'     => $this->__('Stock Code'),
         ));
 
+
+        $fieldset->addField('is_active', 'select', array(
+                'label'     => $this->__('Status'),
+                'title'     => $this->__('Status'),
+                'name'      => 'is_active',
+                'required'  => true,
+                'options'   => array(
+                        '1' => $this->__('Enabled'),
+                        '0' => $this->__('Disabled'),
+                ),
+        ));
+
         /**
          * Check is single store mode
          */
@@ -65,16 +77,6 @@ class ADM_Warehouse_Block_Adminhtml_Warehouse_Edit_Form extends Mage_Adminhtml_B
             $model->setStoreId(Mage::app()->getStore(true)->getId());
         }
 
-        $fieldset->addField('is_active', 'select', array(
-                'label'     => $this->__('Status'),
-                'title'     => $this->__('Status'),
-                'name'      => 'is_active',
-                'required'  => true,
-                'options'   => array(
-                        '1' => $this->__('Enabled'),
-                        '0' => $this->__('Disabled'),
-                ),
-        ));
         if (!$model->getId()) {
             $model->setData('is_active', '1');
         }

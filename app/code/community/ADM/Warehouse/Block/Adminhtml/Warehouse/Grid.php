@@ -9,7 +9,7 @@ class ADM_Warehouse_Block_Adminhtml_Warehouse_Grid extends Mage_Adminhtml_Block_
     {
         parent::__construct();
         $this->setId('warehouse_grid');
-        $this->setDefaultSort('stock_id');
+        $this->setDefaultSort('sort_order');
         $this->setDefaultDir('asc');
         $this->setSaveParametersInSession(true);
     }

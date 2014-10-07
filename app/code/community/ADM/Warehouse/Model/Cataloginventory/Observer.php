@@ -33,10 +33,6 @@ class ADM_Warehouse_Model_Cataloginventory_Observer extends Mage_CatalogInventor
             $itemIds = isset($stockData['inventory_item']) ? $stockData['inventory_item'] : array();
             $originalQty = $stockData['original_inventory_qty_by_warehouse'];
 
-//             echo '<pre>';
-//             var_dump($itemIds, $originalQty, $stockData['qty_by_warehouse']);
-//             exit;
-
             foreach ($stockData['qty_by_warehouse'] as $stockId=>$qty) {
 
                 $stockDataChanged = $stockData;
@@ -44,8 +40,6 @@ class ADM_Warehouse_Model_Cataloginventory_Observer extends Mage_CatalogInventor
                 $stockDataChanged['original_inventory_qty'] = $originalQty[$stockId];
                 $product->setStockData($stockDataChanged);
 
-//                 $product->setData('stock_data/original_inventory_qty', $originalQty[$stockId]);
-//                 $product->setData('stock_data/qty', $qty);
                 $item->setStockId($stockId);
 
                 $this->_prepareItemForSave($item, $product);
@@ -59,8 +53,6 @@ class ADM_Warehouse_Model_Cataloginventory_Observer extends Mage_CatalogInventor
             $this->_prepareItemForSave($item, $product);
             $item->save();
         }
-//         exit;
-
 
         return $this;
     }
