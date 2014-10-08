@@ -156,6 +156,100 @@ class ADM_Warehouse_Model_CatalogInventory_Resource_Stock extends Mage_CatalogIn
         }
 
         return parent::_afterSave($object);
+    }
 
+    /**
+     * Set items out of stock basing on their quantities and config settings
+     *
+     */
+    public function updateSetOutOfStock()
+    {
+        $this->_initConfig();
+        $adapter = $this->_getWriteAdapter();
+        $values  = array(
+            'is_in_stock'                  => 0,
+            'stock_status_changed_auto'    => 1
+        );
+
+        $select = $adapter->select()
+            ->from($this->getTable('catalog/product'), 'entity_id')
+            ->where('type_id IN(?)', $this->_configTypeIds);
+
+        $where = sprintf('is_in_stock = 1'
+            . ' AND ((use_config_manage_stock = 1 AND 1 = %2$d) OR (use_config_manage_stock = 0 AND manage_stock = 1))'
+            . ' AND ((use_config_backorders = 1 AND %3$d = %4$d) OR (use_config_backorders = 0 AND backorders = %3$d))'
+            . ' AND ((use_config_min_qty = 1 AND qty <= %5$d) OR (use_config_min_qty = 0 AND qty <= min_qty))'
+            . ' AND product_id IN (%6$s)',
+            'DUMMY_VALUE_NOT_USED',
+            $this->_isConfigManageStock,
+            Mage_CatalogInventory_Model_Stock::BACKORDERS_NO,
+            $this->_isConfigBackorders,
+            $this->_configMinQty,
+            $select->assemble()
+        );
+
+        $adapter->update($this->getTable('cataloginventory/stock_item'), $values, $where);
+    }
+
+    /**
+     * Set items in stock basing on their quantities and config settings
+     *
+     */
+    public function updateSetInStock()
+    {
+        $this->_initConfig();
+        $adapter = $this->_getWriteAdapter();
+        $values  = array(
+                'is_in_stock'   => 1,
+        );
+
+        $select = $adapter->select()
+        ->from($this->getTable('catalog/product'), 'entity_id')
+        ->where('type_id IN(?)', $this->_configTypeIds);
+
+        $where = sprintf('is_in_stock = 0'
+                . ' AND stock_status_changed_auto = 1'
+                . ' AND ((use_config_manage_stock = 1 AND 1 = %2$d) OR (use_config_manage_stock = 0 AND manage_stock = 1))'
+                . ' AND ((use_config_min_qty = 1 AND qty > %3$d) OR (use_config_min_qty = 0 AND qty > min_qty))'
+                . ' AND product_id IN (%4$s)',
+                'DUMMY_VALUE_NOT_USED',
+                $this->_isConfigManageStock,
+                $this->_configMinQty,
+                $select->assemble()
+        );
+
+        $adapter->update($this->getTable('cataloginventory/stock_item'), $values, $where);
+    }
+
+    /**
+     * Update items low stock date basing on their quantities and config settings
+     *
+     */
+    public function updateLowStockDate()
+    {
+        $this->_initConfig();
+
+        $adapter = $this->_getWriteAdapter();
+        $condition = $adapter->quoteInto('(use_config_notify_stock_qty = 1 AND qty < ?)',
+                $this->_configNotifyStockQty) . ' OR (use_config_notify_stock_qty = 0 AND qty < notify_stock_qty)';
+        $currentDbTime = $adapter->quoteInto('?', $this->formatDate(true));
+        $conditionalDate = $adapter->getCheckSql($condition, $currentDbTime, 'NULL');
+
+        $value  = array(
+                'low_stock_date' => new Zend_Db_Expr($conditionalDate),
+        );
+
+        $select = $adapter->select()
+        ->from($this->getTable('catalog/product'), 'entity_id')
+        ->where('type_id IN(?)', $this->_configTypeIds);
+
+        $where = sprintf('((use_config_manage_stock = 1 AND 1 = %2$d) OR (use_config_manage_stock = 0 AND manage_stock = 1))'
+                . ' AND product_id IN (%3$s)',
+                'DUMMY_VALUE_NOT_USED',
+                $this->_isConfigManageStock,
+                $select->assemble()
+        );
+
+        $adapter->update($this->getTable('cataloginventory/stock_item'), $value, $where);
     }
 }
