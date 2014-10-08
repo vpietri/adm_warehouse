@@ -43,6 +43,13 @@ class ADM_Warehouse_Block_Adminhtml_Warehouse_Edit_Form extends Mage_Adminhtml_B
                 'title'     => $this->__('Stock Code'),
         ));
 
+        $fieldset->addField('sort_order', 'text', array(
+                'name'      => 'sort_order',
+                'label'     => $this->__('Priority'),
+                'title'     => $this->__('Priority'),
+                'note'     => $this->__('Used as a descending sort order (a low indice is a high priority)'),
+        ));
+
 
         $fieldset->addField('is_active', 'select', array(
                 'label'     => $this->__('Status'),
