@@ -46,26 +46,26 @@ $installer->getConnection()
 );
 
 /**
- * Create table 'adm_warehouse/stock_store'
+ * Create table 'adm_warehouse/stock_website'
  */
 $table = $installer->getConnection()
-->newTable($installer->getTable('adm_warehouse/stock_store'))
+->newTable($installer->getTable('adm_warehouse/stock_website'))
 ->addColumn('stock_id', Varien_Db_Ddl_Table::TYPE_SMALLINT, null, array(
         'nullable'  => false,
         'primary'   => true,
 ), 'Stock ID')
-->addColumn('store_id', Varien_Db_Ddl_Table::TYPE_SMALLINT, null, array(
+->addColumn('website_id', Varien_Db_Ddl_Table::TYPE_SMALLINT, null, array(
         'unsigned'  => true,
         'nullable'  => false,
         'primary'   => true,
-), 'Store ID')
-->addIndex($installer->getIdxName('adm_warehouse/stock_store', array('store_id')),
-        array('store_id'))
-->addForeignKey($installer->getFkName('adm_warehouse/stock_store', 'stock_id', 'cataloginventory/stock', 'stock_id'),
+), 'Website ID')
+->addIndex($installer->getIdxName('adm_warehouse/stock_website', array('website_id')),
+        array('website_id'))
+->addForeignKey($installer->getFkName('adm_warehouse/stock_website', 'stock_id', 'cataloginventory/stock', 'stock_id'),
         'stock_id', $installer->getTable('cataloginventory/stock'), 'stock_id',
         Varien_Db_Ddl_Table::ACTION_CASCADE, Varien_Db_Ddl_Table::ACTION_CASCADE)
-->addForeignKey($installer->getFkName('adm_warehouse/stock_store', 'store_id', 'core/store', 'store_id'),
-        'store_id', $installer->getTable('core/store'), 'store_id',
+->addForeignKey($installer->getFkName('adm_warehouse/stock_website', 'website_id', 'core/website', 'website_id'),
+        'website_id', $installer->getTable('core/website'), 'website_id',
         Varien_Db_Ddl_Table::ACTION_CASCADE, Varien_Db_Ddl_Table::ACTION_CASCADE)
-->setComment('Stock To Store Linkage Table');
+->setComment('Stock To Website Linkage Table');
 $installer->getConnection()->createTable($table);

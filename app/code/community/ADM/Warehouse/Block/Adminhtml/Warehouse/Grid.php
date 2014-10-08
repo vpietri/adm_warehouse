@@ -23,7 +23,7 @@ class ADM_Warehouse_Block_Adminhtml_Warehouse_Grid extends Mage_Adminhtml_Block_
         $collection = Mage::getModel('cataloginventory/stock')->getCollection();
 
         $this->setCollection($collection);
-        $collection->setFirstStoreFlag(true);
+        $collection->setFirstWebsiteFlag(true);
 
         return parent::_prepareCollection();
     }
@@ -39,20 +39,22 @@ class ADM_Warehouse_Block_Adminhtml_Warehouse_Grid extends Mage_Adminhtml_Block_
                 'header' => $this->__('Stock Name'),
                 'index' => 'stock_name'));
 
-        /**
-         * Check is single store mode
-         */
         if (!Mage::app()->isSingleStoreMode()) {
-            $this->addColumn('store_id', array(
-                    'header'        => $this->__('Store View'),
-                    'index'         => 'store_id',
-                    'type'          => 'store',
-                    'store_all'     => true,
-                    'store_view'    => true,
-                    'sortable'      => false,
-                    'filter_condition_callback'
-                    => array($this, '_filterStoreCondition'),
-            ));
+
+            $websiteOptions = Mage::getModel('core/website')->getCollection()->toOptionHash();
+            array_unshift($websiteOptions, 'All Websites');
+
+            $this->addColumn('website_id',
+                    array(
+                            'header'=> Mage::helper('catalog')->__('Websites'),
+                            'width' => '100px',
+                            'sortable'  => false,
+                            'index'     => 'website_id',
+                            'type'      => 'options',
+                            'options'   => $websiteOptions,
+                            'sortable'      => false,
+                            'filter_condition_callback' => array($this, '_filterWebsiteCondition'),
+                    ));
         }
 
         $this->addColumn('sort_order', array(
@@ -80,13 +82,13 @@ class ADM_Warehouse_Block_Adminhtml_Warehouse_Grid extends Mage_Adminhtml_Block_
         parent::_afterLoadCollection();
     }
 
-    protected function _filterStoreCondition($collection, $column)
+    protected function _filterWebsiteCondition($collection, $column)
     {
         if (!$value = $column->getFilter()->getValue()) {
             return;
         }
 
-        $this->getCollection()->addStoreFilter($value);
+        $this->getCollection()->addWebsiteFilter($value);
     }
 
     /**

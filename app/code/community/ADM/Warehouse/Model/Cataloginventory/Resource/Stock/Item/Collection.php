@@ -14,7 +14,11 @@ class ADM_Warehouse_Model_CatalogInventory_Resource_Stock_Item_Collection extend
         if(is_array($stock)) {
             $this->setFlag('stock_filter', true);
             $this->_stock_filter_ids = $stock;
-            $this->addFieldToFilter('main_table.stock_id', array('in'=>$stock));
+            if(!empty($stock)) {
+                $this->addFieldToFilter('main_table.stock_id', array('in'=>$stock));
+            } else {
+                $this->addFieldToFilter('1', '0');
+            }
         } else {
             parent::addStockFilter($stock);
         }

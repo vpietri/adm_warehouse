@@ -44,6 +44,7 @@ class ADM_Warehouse_Model_CatalogInventory_Resource_Stock extends Mage_CatalogIn
 
     /**
      * Get stock items data for requested products
+     * called in ADM_Warehouse_Model_Cataloginventory_Stock::registerProductsSale
      *
      * @param Mage_CatalogInventory_Model_Stock $stock
      * @param array $productIds
@@ -60,6 +61,7 @@ class ADM_Warehouse_Model_CatalogInventory_Resource_Stock extends Mage_CatalogIn
         $select = $this->_getWriteAdapter()->select()
         ->from(array('si' => $itemTable))
         ->join(array('p' => $productTable), 'p.entity_id=si.product_id', array('type_id'))
+        //TODO: Set stock_id filter
         //->where('stock_id=?', $stock->getId())
         ->where('product_id IN(?)', $productIds)
         ->forUpdate($lockRows);
@@ -86,9 +88,9 @@ class ADM_Warehouse_Model_CatalogInventory_Resource_Stock extends Mage_CatalogIn
     protected function _afterLoad(Mage_Core_Model_Abstract $object)
     {
         if ($object->getId()) {
-            $stores = $this->lookupStoreIds($object->getId());
+            $websites = $this->lookupWebsiteIds($object->getId());
 
-            $object->setData('store_id', $stores);
+            $object->setData('website_id', $websites);
 
         }
 
@@ -101,12 +103,12 @@ class ADM_Warehouse_Model_CatalogInventory_Resource_Stock extends Mage_CatalogIn
      * @param int $id
      * @return array
      */
-    public function lookupStoreIds($stockId)
+    public function lookupWebsiteIds($stockId)
     {
         $adapter = $this->_getReadAdapter();
 
         $select  = $adapter->select()
-        ->from($this->getTable('adm_warehouse/stock_store'), 'store_id')
+        ->from($this->getTable('adm_warehouse/stock_website'), 'website_id')
         ->where('stock_id = ?',(int)$stockId);
 
         return $adapter->fetchCol($select);
@@ -120,17 +122,21 @@ class ADM_Warehouse_Model_CatalogInventory_Resource_Stock extends Mage_CatalogIn
      */
     protected function _afterSave(Mage_Core_Model_Abstract $object)
     {
-        $oldStores = $this->lookupStoreIds($object->getId());
-        $newStores = (array)$object->getStores();
+        $oldWebsites = $this->lookupWebsiteIds($object->getId());
+        $newWebsites = (array)$object->getWebsites();
 
-        $table  = $this->getTable('adm_warehouse/stock_store');
-        $insert = array_diff($newStores, $oldStores);
-        $delete = array_diff($oldStores, $newStores);
+        if(in_array(0, $newWebsites)) {
+            $newWebsites = array(0);
+        }
+
+        $table  = $this->getTable('adm_warehouse/stock_website');
+        $insert = array_diff($newWebsites, $oldWebsites);
+        $delete = array_diff($oldWebsites, $newWebsites);
 
         if ($delete) {
             $where = array(
                     'stock_id = ?'     => (int) $object->getId(),
-                    'store_id IN (?)' => $delete
+                    'website_id IN (?)' => $delete
             );
 
             $this->_getWriteAdapter()->delete($table, $where);
@@ -139,10 +145,10 @@ class ADM_Warehouse_Model_CatalogInventory_Resource_Stock extends Mage_CatalogIn
         if ($insert) {
             $data = array();
 
-            foreach ($insert as $storeId) {
+            foreach ($insert as $websiteId) {
                 $data[] = array(
                         'stock_id'  => (int) $object->getId(),
-                        'store_id' => (int) $storeId
+                        'website_id' => (int) $websiteId
                 );
             }
 

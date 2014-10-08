@@ -59,22 +59,18 @@ class ADM_Warehouse_Block_Adminhtml_Warehouse_Edit_Form extends Mage_Adminhtml_B
          * Check is single store mode
          */
         if (!Mage::app()->isSingleStoreMode()) {
-            $field =$fieldset->addField('store_id', 'multiselect', array(
-                    'name'      => 'stores[]',
-                    'label'     => $this->__('Store View'),
-                    'title'     => $this->__('Store View'),
+
+            $websiteOptions = Mage::getModel('core/website')->getCollection()->toOptionArray();
+            array_unshift($websiteOptions, array('value'=>0, 'label'=>'All Websites'));
+
+            $fieldset->addField('website_id', 'multiselect', array(
+                    'name'      => 'websites[]',
+                    'label'     => $this->__('Websites'),
+                    'title'     => $this->__('Websites'),
                     'required'  => true,
-                    'values'    => Mage::getSingleton('adminhtml/system_store')->getStoreValuesForForm(false, true),
-            ));
-            $renderer = $this->getLayout()->createBlock('adminhtml/store_switcher_form_renderer_fieldset_element');
-            $field->setRenderer($renderer);
-        }
-        else {
-            $fieldset->addField('store_id', 'hidden', array(
-                    'name'      => 'stores[]',
-                    'value'     => Mage::app()->getStore(true)->getId()
-            ));
-            $model->setStoreId(Mage::app()->getStore(true)->getId());
+                    'values'   => $websiteOptions,
+                    )
+            );
         }
 
         if (!$model->getId()) {

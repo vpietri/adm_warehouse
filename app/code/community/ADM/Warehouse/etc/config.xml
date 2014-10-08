@@ -14,9 +14,9 @@
             <adm_warehouse_resource>
                 <class>ADM_Warehouse_Model_Resource</class>
                 <entities>
-                    <stock_store>
-                        <table>adm_cataloginventory_stock_store</table>
-                    </stock_store>
+                    <stock_website>
+                        <table>adm_cataloginventory_stock_website</table>
+                    </stock_website>                    
                 </entities>
             </adm_warehouse_resource>
             <cataloginventory>

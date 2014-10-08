@@ -16,16 +16,16 @@ class ADM_Warehouse_Model_CatalogInventory_Resource_Stock_Collection extends Mag
     {
         $this->_init('cataloginventory/stock');
         $this->_map['fields']['stock_id'] = 'main_table.stock_id';
-        $this->_map['fields']['store']    = 'stock_table.store_id';
+        $this->_map['fields']['website']    = 'stock_table.website_id';
     }
 
     /**
-     * Set first store flag
+     * Set first website flag
      *
      * @param bool $flag
      * @return ADM_Warehouse_Model_CatalogInventory_Resource_Stock_Collection
      */
-    public function setFirstStoreFlag($flag = false)
+    public function setFirstWebsiteFlag($flag = false)
     {
         $this->_previewFlag = $flag;
         return $this;
@@ -44,7 +44,7 @@ class ADM_Warehouse_Model_CatalogInventory_Resource_Stock_Collection extends Mag
             $connection = $this->getConnection();
             if (count($items)) {
                 $select = $connection->select()
-                ->from(array('wss'=>$this->getTable('adm_warehouse/stock_store')))
+                ->from(array('wss'=>$this->getTable('adm_warehouse/stock_website')))
                 ->where('wss.stock_id IN (?)', $items);
 
                 if ($result = $connection->fetchPairs($select)) {
@@ -53,15 +53,15 @@ class ADM_Warehouse_Model_CatalogInventory_Resource_Stock_Collection extends Mag
                             continue;
                         }
                         if ($result[$item->getData('stock_id')] == 0) {
-                            $stores = Mage::app()->getStores(false, true);
-                            $storeId = current($stores)->getId();
-                            $storeCode = key($stores);
+                            $websites = Mage::app()->getWebsites(false, true);
+                            $websiteId = current($websites)->getId();
+                            $websiteCode = key($websites);
                         } else {
-                            $storeId = $result[$item->getData('stock_id')];
-                            $storeCode = Mage::app()->getStore($storeId)->getCode();
+                            $websiteId = $result[$item->getData('stock_id')];
+                            $websiteCode = Mage::app()->getWebsite($websiteId)->getCode();
                         }
-                        $item->setData('_first_store_id', $storeId);
-                        $item->setData('store_code', $storeCode);
+                        $item->setData('_first_website_id', $websiteId);
+                        $item->setData('website_code', $websiteCode);
                     }
                 }
             }
@@ -73,41 +73,41 @@ class ADM_Warehouse_Model_CatalogInventory_Resource_Stock_Collection extends Mag
 
 
     /**
-     * Add filter by store
+     * Add filter by website
      *
-     * @param int|Mage_Core_Model_Store $store
+     * @param int|Mage_Core_Model_Website $website
      * @param bool $withAdmin
      * @return ADM_Warehouse_Model_CatalogInventory_Resource_Stock_Collection
      */
-    public function addStoreFilter($store, $withAdmin = true)
+    public function addWebsiteFilter($website, $withAdmin = true)
     {
-        if (!$this->getFlag('store_filter_added')) {
-            if ($store instanceof Mage_Core_Model_Store) {
-                $store = array($store->getId());
+        if (!$this->getFlag('website_filter_added')) {
+            if ($website instanceof Mage_Core_Model_Website) {
+                $website = array($website->getId());
             }
 
-            if (!is_array($store)) {
-                $store = array($store);
+            if (!is_array($website)) {
+                $website = array($website);
             }
 
             if ($withAdmin) {
-                $store[] = Mage_Core_Model_App::ADMIN_STORE_ID;
+                $website[] = 0;
             }
 
-            $this->addFilter('store', array('in' => $store), 'public');
-            $this->setFlag('store_filter_added', true);
+            $this->addFilter('website', array('in' => $website), 'public');
+            $this->setFlag('website_filter_added', true);
         }
         return $this;
     }
 
     /**
-     * Join store relation table if there is store filter
+     * Join website relation table if there is website filter
      */
     protected function _renderFiltersBefore()
     {
-        if ($this->getFilter('store')) {
+        if ($this->getFilter('website')) {
             $this->getSelect()->join(
-                    array('stock_table' => $this->getTable('adm_warehouse/stock_store')),
+                    array('stock_table' => $this->getTable('adm_warehouse/stock_website')),
                     'main_table.stock_id = stock_table.stock_id',
                     array()
             )->group('main_table.stock_id');

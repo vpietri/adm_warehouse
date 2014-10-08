@@ -23,13 +23,13 @@ class ADM_Warehouse_Model_Cataloginventory_Stock extends Mage_CatalogInventory_M
     }
 
 
-    public function getStockIds($storeId=null, $groupId=null)
+    public function getStockIds($websiteId=null, $groupId=null)
     {
-        if (is_null($storeId)) {
-            $storeId = Mage::app()->getStore()->getId();
+        if (is_null($websiteId)) {
+            $websiteId = Mage::app()->getWebsite()->getId();
         }
         $collection = Mage::getResourceModel('cataloginventory/stock_collection')
-                            ->addStoreFilter($storeId)
+                            ->addWebsiteFilter($websiteId)
                             ->setOrder('sort_order', 'ASC');
 
         $collection->addFilter('is_active', 1, 'public');
@@ -38,7 +38,6 @@ class ADM_Warehouse_Model_Cataloginventory_Stock extends Mage_CatalogInventory_M
         foreach($collection as $stock) {
             $sortedStocks[] = $stock->getId();
         }
-
         return $sortedStocks;
     }
 
