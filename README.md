@@ -19,7 +19,7 @@ Compatibility
 
 Requirements
 ------------
-- Hackathon_MageMonitoring
+- Mage_Cataloginventory
 
 Installation
 ------------
