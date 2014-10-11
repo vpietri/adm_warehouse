@@ -107,7 +107,7 @@ class ADM_Warehouse_Model_Cataloginventory_Stock extends Mage_CatalogInventory_M
      */
     public function registerProductsSale($items)
     {
-        $warehouses_qtys = $this->_prepareProductWarehousesAndQtys($items);
+        $warehouses_qtys = $this->_prepareProductWarehousesAndQtysForRegister($items);
 
         $this->_getResource()->beginTransaction();
         $stockInfo = $this->_getResource()->getProductsStock($this, array_keys($warehouses_qtys['products']), true);
@@ -126,7 +126,7 @@ class ADM_Warehouse_Model_Cataloginventory_Stock extends Mage_CatalogInventory_M
             }
         }
 
-        $this->_getResource()->correctItemsByWarehouseQty($warehouses_qtys, '-');
+        $this->_getResource()->correctItemsByWarehouseQty($warehouses_qtys['warehouses'], '-', $warehouses_qtys['item_key']);
 
         $this->_getResource()->commit();
         return $fullSaveItems;
@@ -138,11 +138,48 @@ class ADM_Warehouse_Model_Cataloginventory_Stock extends Mage_CatalogInventory_M
      */
     public function revertProductsSale($items)
     {
-        $warehouses_qtys = $this->_prepareProductWarehousesAndQtys($items);
+        $warehouses_qtys = $this->_prepareProductWarehousesAndQtysForRevert($items);
 
-        $this->_getResource()->correctItemsByWarehouseQty($warehouses_qtys, '+');
+        $this->_getResource()->correctItemsByWarehouseQty($warehouses_qtys['warehouses'], '+', $warehouses_qtys['item_key']);
         return $this;
     }
+
+
+    protected function _prepareProductWarehousesAndQtysForRevert($items)
+    {
+        $warehouses_qtys = array(
+                                'products' => array(),
+                                'warehouses' => array(),
+                                'item_key' => false);
+
+        foreach ($items as $productId => $item) {
+            if (empty($item['item'])) {
+                $stockItem = Mage::getModel('cataloginventory/stock_item')->loadByProduct($productId);
+            } else {
+                $stockItem = $item['item'];
+            }
+            $canSubtractQty = $stockItem->getId() && $stockItem->canSubtractQty();
+            $itemType = false;
+            if ($canSubtractQty && Mage::helper('catalogInventory')->isQty($stockItem->getTypeId())) {
+                if (empty($itemType)) {
+                    $itemType = $this->_getItempTypeKey($item);
+                    $warehouses_qtys['item_key']=$itemType;
+                }
+                $warehouses_qtys['products'][$productId] = $item['qty'];
+                foreach ($item['warehouses'] as $stockId=>$qty) {
+                    $warehouses_qtys['warehouses'][$stockId][] = array(
+                            'product_id' => $productId,
+                            'qty' => $qty,
+                            'item_id'=>$item[$itemType],
+                            );
+                }
+
+            }
+
+        }
+        return $warehouses_qtys;
+    }
+
 
 
     /**
@@ -151,54 +188,111 @@ class ADM_Warehouse_Model_Cataloginventory_Stock extends Mage_CatalogInventory_M
      *
      * @param array $warehouses_qtys
      */
-    protected function _prepareProductWarehousesAndQtys($items)
+    protected function _prepareProductWarehousesAndQtysForRegister($items, $itemType='quote_item_id')
     {
-        $warehouses_qtys = array('products'=>array(), 'warehouses'=>array());
+        $warehouses_qtys = array(
+                                'products' => array(),
+                                'warehouses' => array(),
+                                'item_key' => $itemType);
         foreach ($items as $productId => $item) {
             if (empty($item['item'])) {
                 $stockItem = Mage::getModel('cataloginventory/stock_item')->loadByProduct($productId);
             } else {
                 $stockItem = $item['item'];
             }
-
-
             $canSubtractQty = $stockItem->getId() && $stockItem->canSubtractQty();
             if ($canSubtractQty && Mage::helper('catalogInventory')->isQty($stockItem->getTypeId())) {
                 $remainingQty = $item['qty'];
-                $warehouses_qtys['products'][$productId]=$remainingQty;
-                foreach($stockItem->getStockDetails() as $stockDetail) {
-                    $wQty=0;
-                    $qty= $stockDetail['qty'];
-                    $stockId= $stockDetail['stock_id'];
+                $warehouses_qtys['products'][$productId] = $remainingQty;
+                if(!$stockItem->getStockDetails()) {
+                    throw new Exception('Stock detail is missing, cannot substract stock quantity.');
+                }
 
-                    //TODO: check backorder
-                    //Set qty by stock
-                    if($qty<=0) {
+                foreach ($stockItem->getStockDetails() as $stockDetail) {
+                    if (empty($itemType)) {
+                        $itemType = $this->_getItempTypeKey($item);
+                        $warehouses_qtys['item_key']=$itemType;
+                    }
+                    $wQty = 0;
+                    $qty = $stockDetail['qty'];
+                    $stockId = $stockDetail['stock_id'];
+                    // TODO: check backorder
+                    // Set qty by stock
+                    if ($qty <= 0) {
                         continue;
-                    } elseif ($remainingQty<=$qty) {
+                    } elseif ($remainingQty <= $qty) {
                         $wQty = $remainingQty;
-                    } elseif ($remainingQty>$qty) {
+                    } elseif ($remainingQty > $qty) {
                         $wQty = $qty;
                     }
-
-                    $warehouses_qtys['warehouses'][$stockId][$productId] = $wQty;
-                    $remainingQty-= $wQty;
-
-                    if(empty($remainingQty)) {
+                    $warehouses_qtys['warehouses'][$stockId][] = array(
+                                                                    'product_id' => $productId,
+                                                                    'qty' => $wQty,
+                                                                    'item_id'=>$item[$itemType],
+                            );
+                    $remainingQty -= $wQty;
+                    if (empty($remainingQty)) {
                         break;
                     }
                 }
             }
         }
 
-        //Dispatch event in order to change the warehouse stock picking
-        Mage::dispatchEvent('warehouses_cataloginventory_prepare_qtys', array(
-                'warehouses'       => $warehouses_qtys,
-                'items'    => $items
-        ));
-
         return $warehouses_qtys;
     }
+
+
+
+    protected function _getItempTypeKey($item)
+    {
+        if (!empty($item['quote_item_id'])) {
+            $itemType = 'quote_item_id';
+        } elseif (!empty($item['creditmemo_item_id'])) {
+            $itemType = 'creditmemo_item_id';
+        } else {
+            throw new Exception('Cannot defined item type.');
+        }
+
+        return $itemType;
+    }
+
+
+    /**
+     * Get back to stock (when order is canceled or whatever else)
+     *
+     * @param int $productId
+     * @param numeric $qty
+     * @param Mage_Sales_Model_Order_Item $item
+     *
+     * @return Mage_CatalogInventory_Model_Stock
+     */
+    public function backItemQtyToWarehouse($productId, $qty, Mage_Sales_Model_Order_Item $item)
+    {
+        $stockItemCollection = Mage::getResourceModel('cataloginventory/stock_item_collection')
+                            ->addSalesOrderItemFilter($item);
+
+        foreach ($stockItemCollection as $stockItem) {
+            if (Mage::helper('catalogInventory')->isQty($stockItem->getTypeId())) {
+
+                $quoteQty = $stockItem->getQuoteQty();
+                if($quoteQty<=$qty) {
+                    $stockItem->addQty($quoteQty);
+                } else {
+                    $stockItem->addQty($qty);
+                }
+
+                if ($stockItem->getCanBackInStock() && $stockItem->getQty() > $stockItem->getMinQty()) {
+                    $stockItem->setIsInStock(true)
+                    ->setStockStatusChangedAutomaticallyFlag(true);
+                }
+                $stockItem->save();
+            }
+        }
+
+        return $this;
+    }
+
+
 
     /**
      * Prepare stock statuses.
@@ -217,4 +311,8 @@ class ADM_Warehouse_Model_Cataloginventory_Stock extends Mage_CatalogInventory_M
 
         return $statuses->getData();
     }
+
+
+
+
 }

@@ -47,4 +47,28 @@ class ADM_Warehouse_Model_CatalogInventory_Resource_Stock_Item_Collection extend
         return $this;
     }
 
+    /**
+     *
+     * @param Mage_Sales_Model_Order_Item $item
+     */
+    public function addSalesOrderItemFilter(Mage_Sales_Model_Order_Item $item)
+    {
+        $this->getSelect()->join(array('stqt'=>$this->getTable('adm_warehouse/stock_item_quote')), 'main_table.stock_id=stqt.stock_id AND main_table.product_id=stqt.product_id', array('quote_qty'=>'stqt.qty'))
+            ->where('quote_item_id=?', $item->getQuoteItemId());
+
+        return $this;
+    }
+
+    /**
+     *
+     * @param Mage_Sales_Model_Order_Item $item
+     */
+    public function addSalesCreditmemoItemFilter(Mage_Sales_Model_Order_Item $item)
+    {
+        $this->getSelect()->join(array('stqt'=>$this->getTable('adm_warehouse/stock_item_creditmemo')), 'main_table.stock_id=stqt.stock_id AND main_table.product_id=stqt.product_id', array())
+        ->where('quote_item_id=?', $item->getQuoteItemId());
+
+        return $this;
+    }
+
 }

@@ -37,6 +37,7 @@ class ADM_Warehouse_Model_CatalogInventory_Resource_Stock_Item extends Mage_Cata
                 }
                 $item->setStockDetails($stockDetails);
                 $item->setQty($qty);
+                $item->setTotalQty($qty);
             }
         } else {
             $item->setQty(0);

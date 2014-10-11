@@ -17,6 +17,12 @@
                     <stock_website>
                         <table>adm_cataloginventory_stock_website</table>
                     </stock_website>                    
+                    <stock_item_quote>
+                        <table>adm_cataloginventory_stock_item_quote</table>
+                    </stock_item_quote>                    
+                    <stock_item_creditmemo>
+                        <table>adm_cataloginventory_stock_item_creditmemo</table>
+                    </stock_item_creditmemo>                    
                 </entities>
             </adm_warehouse_resource>
             <cataloginventory>

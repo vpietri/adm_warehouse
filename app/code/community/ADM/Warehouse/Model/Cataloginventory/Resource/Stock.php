@@ -1,46 +1,29 @@
 <?php
 class ADM_Warehouse_Model_CatalogInventory_Resource_Stock extends Mage_CatalogInventory_Model_Resource_Stock
 {
+
+
     /**
-     * Correct particular stock products qty based on operator
+     * Lock product items
      *
      * @param Mage_CatalogInventory_Model_Stock $stock
-     * @param array $productQtys
-     * @param string $operator +/-
+     * @param int|array $productIds
      * @return Mage_CatalogInventory_Model_Resource_Stock
      */
-    public function correctItemsByWarehouseQty($warehousesQtys, $operator = '-')
+    public function lockProductItems($stock, $productIds)
     {
-        if (empty($warehousesQtys) or empty($warehousesQtys['products']) or empty($warehousesQtys['warehouses'])) {
-            return $this;
-        }
-
-        $adapter = $this->_getWriteAdapter();
-        $conditions = array();
-        foreach ($warehousesQtys['warehouses'] as $stockId => $productIds) {
-            foreach ($productIds as $productId=>$qty) {
-                $case = $adapter->quoteInto('product_id=?', $productId) .
-                        ' AND ' .
-                        $adapter->quoteInto('stock_id=?', $stockId);
-                $result = $adapter->quoteInto("qty{$operator}?", $qty);
-                $conditions[$case] = $result;
-            }
-        }
-
-        //With more than 255 CASE WHEN there can have a issue
-        $value = $adapter->getCaseSql('', $conditions, 'qty');
-        $where = array(
-                'product_id IN (?)' => array_keys($warehousesQtys['products']),
-                'stock_id IN (?)' => array_keys($warehousesQtys['warehouses'])
-        );
-
-        $adapter->beginTransaction();
-        $adapter->update($this->getTable('cataloginventory/stock_item'), array('qty' => $value), $where);
-        $adapter->commit();
-
+        $itemTable = $this->getTable('cataloginventory/stock_item');
+        $select = $this->_getWriteAdapter()->select()
+        ->from($itemTable)
+        ->where('stock_id in IN(?)', $stock->getStockIds())
+        ->where('product_id IN(?)', $productIds)
+        ->forUpdate(true);
+        /**
+         * We use write adapter for resolving problems with replication
+         */
+        $this->_getWriteAdapter()->query($select);
         return $this;
     }
-
 
     /**
      * Get stock items data for requested products
@@ -77,6 +60,115 @@ class ADM_Warehouse_Model_CatalogInventory_Resource_Stock extends Mage_CatalogIn
         }
 
         return $productStocksAgg;
+    }
+
+
+    /**
+     * Correct particular stock products qty based on operator
+     *
+     * @param Mage_CatalogInventory_Model_Stock $stock
+     * @param array $productQtys
+     * @param string $operator +/-
+     * @return Mage_CatalogInventory_Model_Resource_Stock
+     */
+    public function correctItemsByWarehouseQty($warehousesQtys, $operator = '-', $itemKey)
+    {
+        if (empty($warehousesQtys)) {
+            return $this;
+        }
+
+
+        $adapter = $this->_getWriteAdapter();
+        $conditions = array();
+        $linkData=array();
+        $productIds=array();
+        foreach ($warehousesQtys as $stockId => $qtysByItems) {
+            foreach ($qtysByItems as $itemQty) {
+
+                $productId = $itemQty['product_id'];
+                $qty = $itemQty['qty'];
+                $productIds[$productId]=$productId;
+
+                $case = $adapter->quoteInto('product_id=?', $productId) .
+                        ' AND ' .
+                        $adapter->quoteInto('stock_id=?', $stockId);
+                $result = $adapter->quoteInto("qty{$operator}?", $qty);
+                $conditions[$case] = $result;
+                $linkData[] = array(
+                                    $itemKey => $itemQty['item_id'],
+                                    'stock_id' => $stockId,
+                                    'product_id' => $productId,
+                                    'qty' => $qty
+                                    );
+            }
+        }
+
+        //TAKE CARE: With more than 255 CASE WHEN we can have an issue
+        $value = $adapter->getCaseSql('', $conditions, 'qty');
+        $where = array(
+                'product_id IN (?)' => $productIds,
+                'stock_id IN (?)' => array_keys($warehousesQtys)
+        );
+
+        $adapter->beginTransaction();
+        $adapter->update($this->getTable('cataloginventory/stock_item'), array('qty' => $value), $where);
+
+        try {
+            if (empty($itemKey)) {
+                throw new Exception('Link key undefined.');
+            }
+
+            if ($operator=='-') {
+                $tableItemLink = $this->getTable('adm_warehouse/stock_item_quote');
+            } else {
+                //TODO: Store data in this table is not mandatory can be set in configuration
+                $tableItemLink = $this->getTable('adm_warehouse/stock_item_creditmemo');
+            }
+
+            if(!empty($tableItemLink)) {
+                $bulkInsert = array();
+                foreach($linkData as $updateLink) {
+                    $bulkInsert[] = '(\'' . implode('\',\'', $updateLink) . '\')';
+                }
+                $insert = 'INSERT INTO '. $tableItemLink . ' (' . $itemKey . ', stock_id, product_id, qty) VALUES ' . implode(',',$bulkInsert);
+                $adapter->query($insert);
+            }
+
+        } catch (Exception $e) {
+           Mage::logException($e);
+        }
+
+        $adapter->commit();
+        return $this;
+    }
+
+    /**
+     * Get information on linked items
+     *
+     * @param array $itemIds
+     * @param string $type
+     * @throws Exception
+     *
+     * @return array
+     */
+    public function getLinkedItemsWarehouseQtys($itemIds, $type)
+    {
+        if (in_array($type, array('quote','creditmemo'))) {
+            $select = $this->_getReadAdapter()->select()
+            ->from(array('sfoi'=>$this->getTable('sales/order_item')), array())
+            ->join(array('acsiq' => $this->getTable('adm_warehouse/stock_item_quote')), 'acsiq.quote_item_id= sfoi.quote_item_id', '*');
+
+            if($type=='quote') {
+                $select->where('sfoi.quote_item_id IN (?)', $itemIds);
+            } else {
+                $select->join(array('sfci' => $this->getTable('sales/creditmemo_item')), 'sfci.order_item_id=sfoi.item_id', array());
+                $select->where('sfci.entity_id IN (?)', $itemIds);
+            }
+
+            return $this->_getWriteAdapter()->fetchAll($select);
+        } else {
+            throw new Exception('Unrecognized type for linked stock table.');
+        }
     }
 
     /**
