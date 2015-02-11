@@ -1,3 +1,5 @@
 # Module ADM_Warehouse
 app/code/community/ADM/Warehouse   app/code/community/ADM/Warehouse
+app/design/adminhtml/default/default/template/adm/warehouse   app/design/adminhtml/default/default/template/adm/warehouse
+app/design/adminhtml/default/default/layout/adm/warehouse.xml   app/design/adminhtml/default/default/layout/adm/warehouse.xml
 app/etc/modules/ADM_Warehouse.xml   app/etc/modules/ADM_Warehouse.xml
