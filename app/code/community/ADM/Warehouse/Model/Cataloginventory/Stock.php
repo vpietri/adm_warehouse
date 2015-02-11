@@ -6,7 +6,11 @@ class ADM_Warehouse_Model_Cataloginventory_Stock extends Mage_CatalogInventory_M
      * Stock's Statuses
      */
     const STATUS_ENABLED = 1;
+
     const STATUS_DISABLED = 0;
+
+    protected $_stock_ids_by_website=array();
+
 
     /**
      * Retrieve stock identifier
@@ -28,17 +32,22 @@ class ADM_Warehouse_Model_Cataloginventory_Stock extends Mage_CatalogInventory_M
         if (is_null($websiteId)) {
             $websiteId = Mage::app()->getWebsite()->getId();
         }
-        $collection = Mage::getResourceModel('cataloginventory/stock_collection')
-                            ->addWebsiteFilter($websiteId)
-                            ->setOrder('sort_order', 'ASC');
 
-        $collection->addFilter('is_active', 1, 'public');
+        if (!isset($this->_stock_ids_by_website[$websiteId])) {
+            $collection = Mage::getResourceModel('cataloginventory/stock_collection')
+                                ->addWebsiteFilter($websiteId)
+                                ->setOrder('sort_order', 'ASC');
 
-        $sortedStocks=array();
-        foreach($collection as $stock) {
-            $sortedStocks[] = $stock->getId();
+            $collection->addFilter('is_active', 1, 'public');
+
+            $sortedStocks=array();
+            foreach($collection as $stock) {
+                $sortedStocks[] = $stock->getId();
+            }
+            $this->_stock_ids_by_website[$websiteId] = $sortedStocks;
         }
-        return $sortedStocks;
+
+        return $this->_stock_ids_by_website[$websiteId];
     }
 
 
