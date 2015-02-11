@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<layout>
+    <adminhtml_stock_index>
+        <reference name="content">
+            <block type="adm_warehouse/adminhtml_stock" name="stock.grid_container"/>
+        </reference>
+    </adminhtml_stock_index>
+    
+    <adminhtml_stock_edit>
+        <reference name="content">
+            <block type="adm_warehouse/adminhtml_stock_edit" name="stock.edit_container"/>
+        </reference>
+    </adminhtml_stock_edit>
+        
+    <adminhtml_warehouse_index>
+        <reference name="content">
+            <block type="adm_warehouse/adminhtml_warehouse" name="warehouse.grid_container"/>
+        </reference>
+    </adminhtml_warehouse_index>
+    
+    <adminhtml_warehouse_edit>
+        <!-- <update handle="editor"/> -->
+        <reference name="content">
+            <block type="adm_warehouse/adminhtml_warehouse_edit" name="warehouse.edit_container"/>
+        </reference>
+    </adminhtml_warehouse_edit>
+    
+<!--     <adminhtml_catalog_product_action_attribute_edit>
+        <reference name="attributes_tabs">
+            <action method="removeTab"><name>inventory</name></action>
+        </reference>
+    </adminhtml_catalog_product_action_attribute_edit>
+ -->    
+    
+<!--     <adminhtml_catalog_product_edit>
+      <reference name="product_tabs">
+          <action method="removeTab"><name>inventory</name></action>
+          <block type="adminhtml/product_tab_inventory" name="tab_inventory_extended" template="catalog/product/edit/action/inventory.phtml" />
+          <action method="addTab"><name>inventorysss</name><block>tab_inventory_extended</block></action>
+      </reference>
+    </adminhtml_catalog_product_edit> -->
+    
+            
+</layout>
