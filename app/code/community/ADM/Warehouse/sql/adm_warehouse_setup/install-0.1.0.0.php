@@ -58,6 +58,7 @@ $table = $installer->getConnection()
         'unsigned'  => true,
         'nullable'  => false,
         'primary'   => true,
+        'default'   => '0',
 ), 'Website ID')
 ->addIndex($installer->getIdxName('adm_warehouse/stock_website', array('website_id')),
         array('website_id'))
@@ -69,6 +70,31 @@ $table = $installer->getConnection()
         Varien_Db_Ddl_Table::ACTION_CASCADE, Varien_Db_Ddl_Table::ACTION_CASCADE)
 ->setComment('Stock To Website Linkage Table');
 $installer->getConnection()->createTable($table);
+
+
+
+/**
+ * Update data
+ */
+$setup = $installer->getConnection();
+
+try {
+    $setup->beginTransaction();
+
+    $setup->update($installer->getTable('cataloginventory/stock'), array('is_active'=>1), 'stock_id=1');
+
+    $setup->insert($installer->getTable('adm_warehouse/stock_website'), array(
+            'stock_id' => '1',
+            'website_id'  => '0'
+    ));
+
+    $setup->commit();
+} catch (Exception $e) {
+    $setup->rollback();
+    throw $e;
+}
+
+
 
 /**
  * Create table 'adm_warehouse/stock_item_quote'
