@@ -29,6 +29,14 @@ class ADM_Warehouse_Adminhtml_WarehouseController extends Mage_Adminhtml_Control
     }
 
     /**
+     * Create new warehouse
+     */
+    public function newAction()
+    {
+        $this->_forward('edit');
+    }
+
+    /**
      * display grid
      */
     public function editAction()
@@ -49,8 +57,9 @@ class ADM_Warehouse_Adminhtml_WarehouseController extends Mage_Adminhtml_Control
                 $this->_redirect('*/*/');
                 return;
             }
-            Mage::register('current_stock', $model);
         }
+
+        Mage::register('current_stock', $model);
 
         $this->_title($model->getId() ? $model->getName() : $this->__('New Stock'));
 
