@@ -20,16 +20,29 @@ class ADM_Warehouse_Block_Adminhtml_Catalog_Product_Edit_Tab_Inventory extends M
         return Mage::getModel('cataloginventory/stock')->getCollection();
     }
 
-
+    /**
+     * Initialize $this->_item_by_warehouses with quantities for a given product
+     *
+     * @return Mage_Cataloginventory_Model_Stock
+     */
     public function getQtysByWarehouse()
     {
-        if(is_null($this->_item_by_warehouses)) {
+        if (!$this->_item_by_warehouses instanceof ADM_Warehouse_Model_CatalogInventory_Resource_Stock_Collection)
+        {
             $warehouses = Mage::getModel('cataloginventory/stock')->getCollection();
-            $qtyByStock = $this->getStockItem()->getStockDetails();
+            $stockItem = $this->getStockItem();
 
-            foreach($warehouses as $warehouse) {
-                foreach($qtyByStock as $stockDetail) {
-                    if($stockDetail['stock_id']==$warehouse->getId()) {
+            foreach ($warehouses as $warehouse)
+            {
+                if (!$stockItem)
+                {
+                    continue;
+                }
+
+                foreach ($stockItem->getStockDetails() as $stockDetail)
+                {
+                    if ($stockDetail['stock_id'] == $warehouse->getId())
+                    {
                         $warehouse->setQty($stockDetail['qty']);
                         $warehouse->setItemId($stockDetail['item_id']);
                     }
@@ -41,4 +54,5 @@ class ADM_Warehouse_Block_Adminhtml_Catalog_Product_Edit_Tab_Inventory extends M
 
         return $this->_item_by_warehouses;
     }
+
 }
