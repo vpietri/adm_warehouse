@@ -24,7 +24,6 @@ class ADM_Warehouse_Block_Adminhtml_Catalog_Product_Grid extends Mage_Adminhtml_
                            ->select()
                             ->from(array('at_sub_qty' => $collection->getResource()->getTable('cataloginventory/stock_item')),array('product_id'))
                             ->columns(new Zend_Db_Expr("SUM(at_sub_qty.qty) AS qty"))
-                            //->columns(new Zend_Db_Expr("GROUP_CONCAT(at_sub_qty.stock_id,',') AS stock_ids"))
                             ->group('at_sub_qty.product_id');
 
                 $select->joinLeft(array('at_qty'=>$subquery),'at_qty.product_id=e.entity_id',array());

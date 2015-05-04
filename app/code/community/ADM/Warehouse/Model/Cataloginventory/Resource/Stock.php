@@ -48,18 +48,9 @@ class ADM_Warehouse_Model_CatalogInventory_Resource_Stock extends Mage_CatalogIn
         //->where('stock_id=?', $stock->getId())
         ->where('product_id IN(?)', $productIds)
         ->forUpdate($lockRows);
-        $productStocks = $this->_getWriteAdapter()->fetchAll($select);
 
-        $productStocksAgg=array();
-        foreach($productStocks as $stokItem) {
-            if(empty($productStocksAgg[$stokItem['product_id']])) {
-                $productStocksAgg[$stokItem['product_id']] = $stokItem;
-            } else {
-                $productStocksAgg[$stokItem['product_id']]['qty'] += $stokItem['qty'];
-            }
-        }
 
-        return $productStocksAgg;
+        return $this->_getWriteAdapter()->fetchAll($select);
     }
 
 
@@ -67,7 +58,7 @@ class ADM_Warehouse_Model_CatalogInventory_Resource_Stock extends Mage_CatalogIn
      * Correct particular stock products qty based on operator
      *
      * @param Mage_CatalogInventory_Model_Stock $stock
-     * @param array $productQtys
+     * @param array $warehousesQtys
      * @param string $operator +/-
      * @return Mage_CatalogInventory_Model_Resource_Stock
      */
@@ -77,15 +68,14 @@ class ADM_Warehouse_Model_CatalogInventory_Resource_Stock extends Mage_CatalogIn
             return $this;
         }
 
-
         $adapter = $this->_getWriteAdapter();
         $conditions = array();
         $linkData=array();
         $productIds=array();
         foreach ($warehousesQtys as $stockId => $qtysByItems) {
-            foreach ($qtysByItems as $itemQty) {
+            foreach ($qtysByItems as $productId => $itemQty) {
 
-                $productId = $itemQty['product_id'];
+//                 $productId = $itemQty['product_id'];
                 $qty = $itemQty['qty'];
                 $productIds[$productId]=$productId;
 
@@ -119,10 +109,10 @@ class ADM_Warehouse_Model_CatalogInventory_Resource_Stock extends Mage_CatalogIn
             }
 
             if ($operator=='-') {
-                $tableItemLink = $this->getTable('adm_warehouse/stock_item_quote');
+                $tableItemLink = $this->getTable('adm_warehouse/sales_item_quote');
             } else {
                 //TODO: Store data in this table is not mandatory can be set in configuration
-                $tableItemLink = $this->getTable('adm_warehouse/stock_item_creditmemo');
+                $tableItemLink = $this->getTable('adm_warehouse/sales_item_creditmemo');
             }
 
             if(!empty($tableItemLink)) {
@@ -156,7 +146,7 @@ class ADM_Warehouse_Model_CatalogInventory_Resource_Stock extends Mage_CatalogIn
         if (in_array($type, array('quote','creditmemo'))) {
             $select = $this->_getReadAdapter()->select()
             ->from(array('sfoi'=>$this->getTable('sales/order_item')), array())
-            ->join(array('acsiq' => $this->getTable('adm_warehouse/stock_item_quote')), 'acsiq.quote_item_id= sfoi.quote_item_id', '*');
+            ->join(array('acsiq' => $this->getTable('adm_warehouse/sales_item_quote')), 'acsiq.quote_item_id= sfoi.quote_item_id', '*');
 
             if($type=='quote') {
                 $select->where('sfoi.quote_item_id IN (?)', $itemIds);

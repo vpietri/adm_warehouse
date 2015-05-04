@@ -20,8 +20,6 @@ class ADM_Warehouse_Block_Adminhtml_Stock_Edit_Form extends Mage_Adminhtml_Block
                 array('id' => 'edit_form', 'action' => $this->getData('action'), 'method' => 'post')
         );
 
-        //$form->setHtmlIdPrefix('block_');
-
         $fieldset = $form->addFieldset('base_fieldset', array('legend'=>$this->__('General Information'), 'class' => 'fieldset-wide'));
 
         if ($model->getItemId()) {

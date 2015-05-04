@@ -2,7 +2,7 @@
 <config>
     <modules>
         <ADM_Warehouse>
-            <version>0.1.0.0</version>
+            <version>0.1.1.0</version>
         </ADM_Warehouse>
     </modules>
     <global>
@@ -17,12 +17,12 @@
                     <stock_website>
                         <table>adm_cataloginventory_stock_website</table>
                     </stock_website>                    
-                    <stock_item_quote>
-                        <table>adm_cataloginventory_stock_item_quote</table>
-                    </stock_item_quote>                    
-                    <stock_item_creditmemo>
-                        <table>adm_cataloginventory_stock_item_creditmemo</table>
-                    </stock_item_creditmemo>                    
+                    <sales_item_quote>
+                        <table>adm_cataloginventory_sales_item_quote</table>
+                    </sales_item_quote>                    
+                    <sales_item_creditmemo>
+                        <table>adm_cataloginventory_sales_item_creditmemo</table>
+                    </sales_item_creditmemo>                    
                 </entities>
             </adm_warehouse_resource>
             <cataloginventory>

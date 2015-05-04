@@ -34,4 +34,22 @@ class ADM_Warehouse_Model_Cataloginventory_Stock_Item extends Mage_CatalogInvent
         }
         return true;
     }
+
+
+    /**
+     * Subtract quote item quantity
+     *
+     * @param   decimal $qty
+     * @return  Mage_CatalogInventory_Model_Stock_Item
+     */
+    public function subtractQty($qty)
+    {
+        if ($this->canSubtractQty()) {
+            $this->setQty($this->getQty()-$qty);
+        }
+        return $this;
+    }
+
 }
+
+

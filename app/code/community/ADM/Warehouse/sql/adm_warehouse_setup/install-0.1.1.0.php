@@ -101,6 +101,12 @@ try {
  */
 $table = $installer->getConnection()
 ->newTable($installer->getTable('adm_warehouse/sales_item_quote'))
+->addColumn('entity_id', Varien_Db_Ddl_Table::TYPE_INTEGER, null, array(
+        'identity'  => true,
+        'unsigned'  => true,
+        'nullable'  => false,
+        'primary'   => true,
+), 'Entity Id')
 ->addColumn('quote_item_id', Varien_Db_Ddl_Table::TYPE_INTEGER, 10, array(
         'nullable'  => false,
         'unsigned'  => true,
@@ -129,6 +135,12 @@ $installer->getConnection()->createTable($table);
  */
 $table = $installer->getConnection()
 ->newTable($installer->getTable('adm_warehouse/sales_item_creditmemo'))
+->addColumn('entity_id', Varien_Db_Ddl_Table::TYPE_INTEGER, null, array(
+        'identity'  => true,
+        'unsigned'  => true,
+        'nullable'  => false,
+        'primary'   => true,
+), 'Entity Id')
 ->addColumn('creditmemo_item_id', Varien_Db_Ddl_Table::TYPE_INTEGER, 10, array(
         'nullable'  => false,
         'unsigned'  => true,

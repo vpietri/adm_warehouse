@@ -51,7 +51,6 @@ class ADM_Warehouse_Block_Adminhtml_Warehouse_Edit extends Mage_Adminhtml_Block_
      */
     protected function _isAllowedAction($action)
     {
-        //return Mage::getSingleton('admin/session')->isAllowed('cms/page/' . $action);
         return true;
     }
 

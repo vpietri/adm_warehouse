@@ -1,8 +1,6 @@
 <?php
 class ADM_Warehouse_Model_CatalogInventory_Resource_Stock_Item_Collection extends Mage_CatalogInventory_Model_Resource_Stock_Item_Collection
 {
-    protected $_stock_filter_ids = array();
-
     /**
      * Add stock filter to collection
      *
@@ -12,8 +10,6 @@ class ADM_Warehouse_Model_CatalogInventory_Resource_Stock_Item_Collection extend
     public function addStockFilter($stock)
     {
         if(is_array($stock)) {
-            $this->setFlag('stock_filter', true);
-            $this->_stock_filter_ids = $stock;
             if(!empty($stock)) {
                 $this->addFieldToFilter('main_table.stock_id', array('in'=>$stock));
             } else {
@@ -27,46 +23,13 @@ class ADM_Warehouse_Model_CatalogInventory_Resource_Stock_Item_Collection extend
     }
 
     /**
-     * Proces loaded collection data
-     *
-     * @return Varien_Data_Collection_Db
-     */
-    protected function _afterLoadData()
-    {
-        // Sort stock item by stock order
-        if ($this->getFlag('stock_filter')) {
-            $sortedData= array();
-            foreach($this->_data as $itemData) {
-                $key = array_search($itemData['stock_id'], $this->_stock_filter_ids, true);
-                $sortedData[$key] = $itemData;
-            }
-            ksort($sortedData);
-            $this->_data = $sortedData;
-        }
-
-        return $this;
-    }
-
-    /**
      *
      * @param Mage_Sales_Model_Order_Item $item
      */
     public function addSalesOrderItemFilter(Mage_Sales_Model_Order_Item $item)
     {
-        $this->getSelect()->join(array('stqt'=>$this->getTable('adm_warehouse/stock_item_quote')), 'main_table.stock_id=stqt.stock_id AND main_table.product_id=stqt.product_id', array('quote_qty'=>'stqt.qty'))
+        $this->getSelect()->join(array('stqt'=>$this->getTable('adm_warehouse/sales_item_quote')), 'main_table.stock_id=stqt.stock_id AND main_table.product_id=stqt.product_id', array('quote_qty'=>'stqt.qty'))
             ->where('quote_item_id=?', $item->getQuoteItemId());
-
-        return $this;
-    }
-
-    /**
-     *
-     * @param Mage_Sales_Model_Order_Item $item
-     */
-    public function addSalesCreditmemoItemFilter(Mage_Sales_Model_Order_Item $item)
-    {
-        $this->getSelect()->join(array('stqt'=>$this->getTable('adm_warehouse/stock_item_creditmemo')), 'main_table.stock_id=stqt.stock_id AND main_table.product_id=stqt.product_id', array())
-        ->where('quote_item_id=?', $item->getQuoteItemId());
 
         return $this;
     }

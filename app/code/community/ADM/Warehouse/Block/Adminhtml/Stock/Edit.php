@@ -51,7 +51,6 @@ class ADM_Warehouse_Block_Adminhtml_Stock_Edit extends Mage_Adminhtml_Block_Widg
      */
     protected function _isAllowedAction($action)
     {
-        //return Mage::getSingleton('admin/session')->isAllowed('cms/page/' . $action);
         return true;
     }
 

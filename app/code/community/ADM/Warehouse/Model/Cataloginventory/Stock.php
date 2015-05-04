@@ -76,15 +76,14 @@ class ADM_Warehouse_Model_Cataloginventory_Stock extends Mage_CatalogInventory_M
             ->joinStockStatus($productCollection->getStoreId())
             ->load();
 
-        $stockItems = array();
         $qty = array();
         $stockDetails = array();
-
         foreach ($productCollection as $product) {
             $qty[$product->getId()] = 0;
             $stockDetails[$product->getId()] = array();
         }
 
+        $stockItems = array();
         foreach ($items as $item) {
             if (!isset($stockItems[$item->getProductId()])) {
                 $stockItems[$item->getProductId()] = $item;
@@ -95,17 +94,17 @@ class ADM_Warehouse_Model_Cataloginventory_Stock extends Mage_CatalogInventory_M
 
         }
 
+
         foreach ($productCollection as $product) {
             if (isset($stockItems[$product->getId()])) {
                 $stockItems[$product->getId()]->setQty($qty[$product->getId()]);
                 $stockItems[$product->getId()]->setStockDetails($stockDetails[$product->getId()]);
                 $stockItems[$product->getId()]->assignProduct($product);
+            } else {
             }
         }
         return $this;
     }
-
-
 
     /**
      * Subtract product qtys from stock.
@@ -121,29 +120,120 @@ class ADM_Warehouse_Model_Cataloginventory_Stock extends Mage_CatalogInventory_M
         $this->_getResource()->beginTransaction();
         $stockInfo = $this->_getResource()->getProductsStock($this, array_keys($warehouses_qtys['products']), true);
 
+        /* @var $fullSaveItems will be affected to _itemsForReindex for reindex */
         $fullSaveItems = array();
         $item = Mage::getModel('cataloginventory/stock_item');
         foreach ($stockInfo as $itemInfo) {
-            $item->setData($itemInfo);
-            if (!$item->checkQty($warehouses_qtys['products'][$item->getProductId()])) {
-                $this->_getResource()->commit();
-                Mage::throwException(Mage::helper('cataloginventory')->__('Not all products are available in the requested quantity'));
-            }
-            $item->subtractQty($warehouses_qtys['products'][$item->getProductId()]);
-            if (!$item->verifyStock() || $item->verifyNotification()) {
-                $fullSaveItems[] = clone $item;
+            if(!empty($warehouses_qtys['warehouses'][$itemInfo['stock_id']][$item->getProductId()])) {
+                $item->setData($itemInfo);
+                $qtyByStock = $warehouses_qtys['warehouses'][$itemInfo['stock_id']][$item->getProductId()];
+
+                if (!$item->checkQty($qtyByStock)) {
+                    $this->_getResource()->commit();
+                    Mage::throwException(Mage::helper('cataloginventory')->__('Not all products are available in the requested quantity'));
+                }
+                $item->subtractQty($qtyByStock);
+                if (!$item->verifyStock() || $item->verifyNotification()) {
+                    $fullSaveItems[] = clone $item;
+                }
             }
         }
 
         $this->_getResource()->correctItemsByWarehouseQty($warehouses_qtys['warehouses'], '-', $warehouses_qtys['item_key']);
-
         $this->_getResource()->commit();
+
         return $fullSaveItems;
     }
 
+
+
+
     /**
+     * Prepare array('products'=>array($productId=>$qty), 'warehouses'=>array($stockId=>=>array($productId=>$qty)))
+     *     based on array($productId => array('qty'=>$qty, 'item'=>$stockItem))
      *
-     * @param unknown_type $items
+     * @param array $warehouses_qtys
+     */
+    protected function _prepareProductWarehousesAndQtysForRegister($items)
+    {
+        $warehouses_qtys = array(
+                'products' => array(),
+                'warehouses' => array());
+        $itemType = $this->_getItemTypeKey($items);
+        $warehouses_qtys['item_key']=$itemType;
+
+        foreach ($items as $productId => $item) {
+
+            if (empty($item['item'])) {
+                $stockItem = Mage::getModel('cataloginventory/stock_item')->loadByProduct($productId);
+            } else {
+                $stockItem = $item['item'];
+            }
+            $canSubtractQty = $stockItem->getId() && $stockItem->canSubtractQty();
+            if ($canSubtractQty && Mage::helper('catalogInventory')->isQty($stockItem->getTypeId())) {
+
+                /* @var $remainingQty : Total qty to substract*/
+                $remainingQty = $item['qty'];
+                $warehouses_qtys['products'][$productId] = $remainingQty;
+                if(!$stockItem->getStockDetails()) {
+                    throw new Exception('Stock detail is missing, cannot substract stock quantity.');
+                }
+
+                foreach ($stockItem->getStockDetails() as $stockDetail) {
+
+                    $qty     = $stockDetail['qty'];
+                    $stockId = $stockDetail['stock_id'];
+
+                    /* @var $wQty : Qty to substract from warehouse stock*/
+                    $wQty = $this->_getMaxAllowedQty($remainingQty,$qty);
+                    if ($wQty>0) {
+                        $warehouses_qtys['warehouses'][$stockId][$productId] = array(
+                                'qty' => $wQty,
+                                'item_id'=>$item[$itemType],
+                        );
+                        $remainingQty = $remainingQty - $wQty;
+                    }
+
+                    if (empty($remainingQty)) {
+                        break;
+                    }
+                }
+
+            }
+        }
+
+        return $warehouses_qtys;
+    }
+
+
+    /**
+     *  TODO: check backorder
+     *
+     * @param unknown_type $remainingQty
+     * @param unknown_type $qty
+     */
+    protected function _getMaxAllowedQty($remainingQty=0, $qty=0)
+    {
+        $wQty = 0;
+        // Set qty by available stock
+        if ($qty>0 and $remainingQty>0) {
+            if ($remainingQty <= $qty) {
+                $wQty = $remainingQty;
+            } else {
+                $wQty = $qty;
+            }
+        }
+
+        return $wQty;
+    }
+
+
+    /**
+     * Revert quote items inventory data (cover not success order place case)
+     * and
+     * Return creditmemo items qty to stock
+     *
+     * @param array $items
      */
     public function revertProductsSale($items)
     {
@@ -156,28 +246,26 @@ class ADM_Warehouse_Model_Cataloginventory_Stock extends Mage_CatalogInventory_M
 
     protected function _prepareProductWarehousesAndQtysForRevert($items)
     {
+
         $warehouses_qtys = array(
                                 'products' => array(),
-                                'warehouses' => array(),
-                                'item_key' => false);
+                                'warehouses' => array());
+
+        $itemType = $this->_getItemTypeKey($items);
+        $warehouses_qtys['item_key']=$itemType;
 
         foreach ($items as $productId => $item) {
+
             if (empty($item['item'])) {
                 $stockItem = Mage::getModel('cataloginventory/stock_item')->loadByProduct($productId);
             } else {
                 $stockItem = $item['item'];
             }
             $canSubtractQty = $stockItem->getId() && $stockItem->canSubtractQty();
-            $itemType = false;
             if ($canSubtractQty && Mage::helper('catalogInventory')->isQty($stockItem->getTypeId())) {
-                if (empty($itemType)) {
-                    $itemType = $this->_getItempTypeKey($item);
-                    $warehouses_qtys['item_key']=$itemType;
-                }
                 $warehouses_qtys['products'][$productId] = $item['qty'];
                 foreach ($item['warehouses'] as $stockId=>$qty) {
-                    $warehouses_qtys['warehouses'][$stockId][] = array(
-                            'product_id' => $productId,
+                    $warehouses_qtys['warehouses'][$stockId][$productId] = array(
                             'qty' => $qty,
                             'item_id'=>$item[$itemType],
                             );
@@ -186,82 +274,33 @@ class ADM_Warehouse_Model_Cataloginventory_Stock extends Mage_CatalogInventory_M
             }
 
         }
+
         return $warehouses_qtys;
     }
-
 
 
     /**
-     * Prepare array('products'=>array($productId=>$qty), 'warehouses'=>array($stockId=>=>array($productId=>$qty)))
-     *     based on array($productId => array('qty'=>$qty, 'item'=>$stockItem))
      *
-     * @param array $warehouses_qtys
+     * @param array $items
+     * @return string (quote_item_id or creditmemo_item_id)
+     *
+     * @throws Exception
      */
-    protected function _prepareProductWarehousesAndQtysForRegister($items, $itemType='quote_item_id')
+    protected function _getItemTypeKey($items)
     {
-        $warehouses_qtys = array(
-                                'products' => array(),
-                                'warehouses' => array(),
-                                'item_key' => $itemType);
+        $itemType = false;
         foreach ($items as $productId => $item) {
-            if (empty($item['item'])) {
-                $stockItem = Mage::getModel('cataloginventory/stock_item')->loadByProduct($productId);
+            if (!empty($item['quote_item_id'])) {
+                $itemType = 'quote_item_id';
+            } elseif (!empty($item['creditmemo_item_id'])) {
+                $itemType = 'creditmemo_item_id';
             } else {
-                $stockItem = $item['item'];
+                throw new Exception('Cannot defined item type.');
             }
-            $canSubtractQty = $stockItem->getId() && $stockItem->canSubtractQty();
-            if ($canSubtractQty && Mage::helper('catalogInventory')->isQty($stockItem->getTypeId())) {
-                $remainingQty = $item['qty'];
-                $warehouses_qtys['products'][$productId] = $remainingQty;
-                if(!$stockItem->getStockDetails()) {
-                    throw new Exception('Stock detail is missing, cannot substract stock quantity.');
-                }
 
-                foreach ($stockItem->getStockDetails() as $stockDetail) {
-                    if (empty($itemType)) {
-                        $itemType = $this->_getItempTypeKey($item);
-                        $warehouses_qtys['item_key']=$itemType;
-                    }
-                    $wQty = 0;
-                    $qty = $stockDetail['qty'];
-                    $stockId = $stockDetail['stock_id'];
-                    // TODO: check backorder
-                    // Set qty by stock
-                    if ($qty <= 0) {
-                        continue;
-                    } elseif ($remainingQty <= $qty) {
-                        $wQty = $remainingQty;
-                    } elseif ($remainingQty > $qty) {
-                        $wQty = $qty;
-                    }
-                    $warehouses_qtys['warehouses'][$stockId][] = array(
-                                                                    'product_id' => $productId,
-                                                                    'qty' => $wQty,
-                                                                    'item_id'=>$item[$itemType],
-                            );
-                    $remainingQty -= $wQty;
-                    if (empty($remainingQty)) {
-                        break;
-                    }
-                }
-            }
+            break;
         }
-
-        return $warehouses_qtys;
-    }
-
-
-
-    protected function _getItempTypeKey($item)
-    {
-        if (!empty($item['quote_item_id'])) {
-            $itemType = 'quote_item_id';
-        } elseif (!empty($item['creditmemo_item_id'])) {
-            $itemType = 'creditmemo_item_id';
-        } else {
-            throw new Exception('Cannot defined item type.');
-        }
-
+        reset($items);
         return $itemType;
     }
 

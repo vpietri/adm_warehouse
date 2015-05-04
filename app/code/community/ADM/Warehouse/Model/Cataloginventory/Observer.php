@@ -62,6 +62,8 @@ class ADM_Warehouse_Model_Cataloginventory_Observer extends Mage_CatalogInventor
 
 
     /**
+     * Overwrite @method _addItemToQtyArray
+     *
      * Adds stock item qty to $items (creates new entry or increments existing one)
      * $items is array with following structure:
      * array(
@@ -182,6 +184,78 @@ class ADM_Warehouse_Model_Cataloginventory_Observer extends Mage_CatalogInventor
 
         return $items;
     }
+
+
+    /**
+     * Subtract quote items qtys from stock items related with quote items products.
+     *
+     * Used before order placing to make order save/place transaction smaller
+     * Also called after every successful order placement to ensure subtraction of inventory
+     *
+     * @param Varien_Event_Observer $observer
+     */
+    public function subtractQuoteInventory(Varien_Event_Observer $observer)
+    {
+        $quote = $observer->getEvent()->getQuote();
+        $order = $observer->getEvent()->getOrder();
+
+        // Maybe we've already processed this quote in some event during order placement
+        // e.g. call in event 'sales_model_service_quote_submit_before' and later in 'checkout_submit_all_after'
+        if ($quote->getInventoryProcessed()) {
+            return;
+        }
+        $items = $this->_getProductsQty($quote->getAllItems());
+
+        //If we are in the case of an order modification
+        if ($order->getData('relation_parent_id')) {
+            $parentOrderId = $order->getData('relation_parent_id');
+            $items = $this->_addWarehouseOrderHistory($items, $order->getData('relation_parent_id'));
+        }
+
+        /**
+         * Remember items
+         */
+        $this->_itemsForReindex = Mage::getSingleton('cataloginventory/stock')->registerProductsSale($items);
+
+        $quote->setInventoryProcessed(true);
+        return $this;
+    }
+
+
+    /**
+     *
+     *
+     * @param array $items
+     *
+     * @return array
+     */
+    protected function _addWarehouseOrderHistory(array $items, $orderId)
+    {
+
+        $linkedItems = Mage::getModel('adm_warehouse/sales_item_quote')->getCollection()
+                                                                 ->addOrderIdFilter($orderId);
+
+        foreach ($linkedItems as $link) {
+            if(isset($items[$link->getProductId()]) and !empty($items[$link->getProductId()]['item'])) {
+                $stockItem = $items[$link->getProductId()]['item'];
+                $stockDetailsWithOrder = array();
+                foreach ($stockItem->getStockDetails() as $stockDetail) {
+                    //When we edit an order we already have stock warehouse information
+                    if ($stockDetail['stock_id'] == $link->getStockId()) {
+                        $stockDetail['qty'] += $link->getQty();
+                        $stockDetail['qty_ordered'] = $link->getQty();
+                    }
+                    $stockDetailsWithOrder[] = $stockDetail;
+                }
+                $stockItem->setStockDetails($stockDetailsWithOrder);
+            }
+        }
+
+        return $items;
+    }
+
+
+
 
 
     /**
