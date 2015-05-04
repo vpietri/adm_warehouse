@@ -10,7 +10,7 @@ TODO
 
 Facts
 -----
-- version: 0.1.0.0
+- version: 0.1.1.0
 - [extension on GitHub](https://github.com/vpietri/ADM_Warehouse)
 
 Compatibility
