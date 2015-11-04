@@ -1,0 +1,8 @@
+{
+  "name": "vpietri/ADM_Warehouse",
+  "description": "Extends Mage_Cataloginventory to allow Magento to manage several stocks. Stocks can be assigned to one or several websites.",
+  "type": "magento-module",
+  "require": {
+    "magento-hackathon/magento-composer-installer": "*"
+  }
+}
