@@ -1,4 +1,4 @@
-ADM_Warehouse
+Multi Stock Warehouse Module for Magento1
 =====================
 
 Extends Mage_Cataloginventory to allow Magento to manage several stocks.
